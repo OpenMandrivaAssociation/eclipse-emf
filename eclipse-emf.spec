@@ -39,6 +39,7 @@ BuildRequires:    java-javadoc
 BuildRequires:    jpackage-utils
 BuildRequires:    eclipse-pde >= 1:3.4.1
 BuildRequires:    dos2unix
+BuildRequires:    zip
 Requires:         java
 Requires:         jpackage-utils
 Requires:         eclipse-platform >= 1:3.4.1
