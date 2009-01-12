@@ -5,7 +5,7 @@ Name:      eclipse-emf
 Version:   2.4.1
 Release:   %mkrel 1
 Summary:   Eclipse Modeling Framework (EMF) Eclipse plugin
-Group:     System Environment/Libraries
+Group:     Development/Java
 License:   EPL
 URL:       http://www.eclipse.org/modeling/emf/
 
@@ -56,7 +56,7 @@ basic editor.
 
 %package   sdk
 Summary:   Eclipse EMF SDK
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  java-javadoc
 Requires:  %{name} = %{version}-%{release}
 
@@ -65,7 +65,7 @@ Documentation and source for the Eclipse Modeling Framework (EMF).
 
 %package   sdo
 Summary:   Service Data Objects (SDO) Eclipse plugin
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  %{name} = %{version}-%{release}
 
 %description sdo
@@ -75,7 +75,7 @@ programming model and abstracts data in a service oriented architecture.
 
 %package   sdo-sdk
 Summary:   Eclipse SDO SDK
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  %{name}-sdo = %{version}-%{release}
 Requires:  %{name}-sdk = %{version}-%{release}
 
@@ -84,7 +84,7 @@ Documentation and source for the Eclipse Service Data Objects (SDO) plugin.
 
 %package   xsd
 Summary:   XML Schema Definition (XSD) Eclipse plugin
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  %{name} = %{version}-%{release}
 
 %description xsd
@@ -95,7 +95,7 @@ representation of XML Schema as a series of XML documents.
 
 %package   xsd-sdk
 Summary:   Eclipse XSD SDK
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  %{name}-xsd = %{version}-%{release}
 Requires:  %{name}-sdk = %{version}-%{release}
 
@@ -104,7 +104,7 @@ Documentation and source for the Eclipse XML Schema Definition (XSD) plugin.
 
 %package   examples
 Summary:   Eclipse EMF/XSD examples
-Group:     System Environment/Libraries
+Group:     Development/Java
 Requires:  %{name}         = %{version}-%{release}
 Requires:  %{name}-sdk     = %{version}-%{release}
 Requires:  %{name}-xsd     = %{version}-%{release}
