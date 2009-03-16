@@ -2,7 +2,7 @@
 %define eclipse_dropin   %{_datadir}/eclipse/dropins/emf
 
 Name:      eclipse-emf
-Version:   2.4.1
+Version:   2.4.2
 Release:   %mkrel 1
 Summary:   Eclipse Modeling Framework (EMF) Eclipse plugin
 Group:     Development/Java
