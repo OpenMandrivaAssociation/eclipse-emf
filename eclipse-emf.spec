@@ -3,7 +3,7 @@
 
 Name:      eclipse-emf
 Version:   2.4.2
-Release:   %mkrel 1
+Release:   %mkrel 2
 Summary:   Eclipse Modeling Framework (EMF) Eclipse plugin
 Group:     Development/Java
 License:   EPL
