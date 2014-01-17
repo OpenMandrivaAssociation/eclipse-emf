@@ -1,51 +1,64 @@
-%define eclipse_base     %{_libdir}/eclipse
-%define eclipse_dropin   %{_datadir}/eclipse/dropins/emf
+%{?_javapackages_macros:%_javapackages_macros}
+%{?scl:%scl_package eclipse-emf}
+%{!?scl:%global pkg_name %{name}}
 
-Name:      eclipse-emf
-Version:   2.4.2
-Release:   %mkrel 3
+
+%if 0%{?rhel} >= 6
+%global debug_package %{nil}
+%endif
+%global eclipse_dropin   %{_datadir}/eclipse/dropins
+
+%global emf_tag R2_9_1
+%global context_qualifier v20130930-0823
+
+%define __requires_exclude osgi*
+
+Name:      %{?scl_prefix}eclipse-emf
+Version:   2.9.1
+Release:   1.0%{?dist} 
 Summary:   Eclipse Modeling Framework (EMF) Eclipse plugin
-Group:     Development/Java
+
 License:   EPL
 URL:       http://www.eclipse.org/modeling/emf/
 
 # source tarball and the script used to generate it from upstream's source control
 # script usage:
 # $ sh get-emf.sh
-Source0:   emf-%{version}.tar.gz
+Source0:   emf-%{emf_tag}.tar.gz
 Source1:   get-emf.sh
 
-# don't depend on ANT_HOME and JAVA_HOME environment vars
-Patch0:    %{name}-make-homeless.patch
+# don't depend on ANT_HOME and JAVA_HOME environment vars, patch upstream
+#Patch0:    %{name}-make-homeless.patch
 # look inside correct directory for platform docs
-Patch1:    %{name}-platform-docs-location.patch
-# look inside all symlink'd plugin directories when building javadocs
-Patch2:    %{name}-symlinked-classpath.patch
-# don't include hidden files in source plugins
-# (mostly to shut rpmlint up, but these files aren't needed for source plugins; they are
-# only needed so the example-installer plugins can create full projects in your workspace)
-Patch3:    %{name}-build-props.patch
-# bundle examples in example-installer plugins from source in tarball instead of from cvs
-Patch4:    %{name}-bundle-examples.patch
-
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+Patch1:    %{pkg_name}-platform-docs-location.patch
+# Build docs correctly
+Patch3:    %{pkg_name}-build-docs.patch
+# Remove xsd2ecore components from SDK, they are not in the main feature
+Patch4:    %{pkg_name}-no-xsd2ecore.patch
+Patch5:    %{pkg_name}-fix-missing-index.patch
 
 BuildArch:        noarch
 
 # we require 1.6.0 because the javadocs fail to build otherwise
-BuildRequires:    java-devel
-BuildRequires:    java-rpmbuild
+BuildRequires:    java-devel >= 1:1.6.0
 BuildRequires:    java-javadoc
 BuildRequires:    jpackage-utils
-BuildRequires:    eclipse-pde >= 1:3.4.1
+BuildRequires:    %{?scl_prefix}eclipse-pde >= 1:4.2.0
 BuildRequires:    dos2unix
-BuildRequires:    zip
 Requires:         java
 Requires:         jpackage-utils
-Requires:         eclipse-platform >= 1:3.4.1
+Requires:         %{?scl_prefix}eclipse-platform >= 1:4.2.0
+Requires:         %{name}-core
 
 # the standalone package was deprecated and removed in EMF 2.3 (see eclipse.org bug #191837)
-Obsoletes:        %{name}-standalone < %{version}
+Obsoletes:        %{name}-standalone < 2.4
+
+# the SDO sub-project was terminated upstream and removed in EMF 2.5 (see eclipse.org bug #251402)
+Obsoletes:        %{name}-sdo < 2.5
+Obsoletes:        %{name}-sdo-sdk < 2.5
+
+#TODO: ODA, GWT and RAP components are not packaged.
+#TODO: Possibly spin XSD off into it's own package, upstream have moved it to it's project
 
 %description
 The Eclipse Modeling Framework (EMF) allows developers to build tools and
@@ -55,37 +68,29 @@ produce a set of Java classes for the model, along with a set of adapter
 classes that enable viewing and command-based editing of the model, and a
 basic editor.
 
+%package   core
+Epoch:      1
+Summary:   Eclipse EMF Core
+
+Requires:  java
+Obsoletes: eclipse-emf-core < 1:2.8.0-20
+
+%description core
+The core of Eclipse Modeling Framework
+ 
 %package   sdk
 Summary:   Eclipse EMF SDK
-Group:     Development/Java
+
 Requires:  java-javadoc
+Requires:  %{?scl_prefix}eclipse-pde >= 1:4.2.0
 Requires:  %{name} = %{version}-%{release}
 
 %description sdk
 Documentation and source for the Eclipse Modeling Framework (EMF).
 
-%package   sdo
-Summary:   Service Data Objects (SDO) Eclipse plugin
-Group:     Development/Java
-Requires:  %{name} = %{version}-%{release}
-
-%description sdo
-Service Data Objects (SDO) is a framework for data application development,
-which includes an architecture and API. It simplifies the J2EE data
-programming model and abstracts data in a service oriented architecture.
-
-%package   sdo-sdk
-Summary:   Eclipse SDO SDK
-Group:     Development/Java
-Requires:  %{name}-sdo = %{version}-%{release}
-Requires:  %{name}-sdk = %{version}-%{release}
-
-%description sdo-sdk
-Documentation and source for the Eclipse Service Data Objects (SDO) plugin.
-
 %package   xsd
 Summary:   XML Schema Definition (XSD) Eclipse plugin
-Group:     Development/Java
+
 Requires:  %{name} = %{version}-%{release}
 
 %description xsd
@@ -96,7 +101,9 @@ representation of XML Schema as a series of XML documents.
 
 %package   xsd-sdk
 Summary:   Eclipse XSD SDK
-Group:     Development/Java
+
+Requires:  java-javadoc
+Requires:  %{?scl_prefix}eclipse-pde >= 1:4.2.0
 Requires:  %{name}-xsd = %{version}-%{release}
 Requires:  %{name}-sdk = %{version}-%{release}
 
@@ -105,24 +112,23 @@ Documentation and source for the Eclipse XML Schema Definition (XSD) plugin.
 
 %package   examples
 Summary:   Eclipse EMF/XSD examples
-Group:     Development/Java
+
 Requires:  %{name}         = %{version}-%{release}
-Requires:  %{name}-sdk     = %{version}-%{release}
 Requires:  %{name}-xsd     = %{version}-%{release}
-Requires:  %{name}-xsd-sdk = %{version}-%{release}
 
 %description examples
-Example projects that demonstrate how to use the Eclipse Modeling Framework
-(EMF) and XML Schema Definition (XSD) plugins.
+Installable versions of the example projects from the SDKs that demonstrate how
+to use the Eclipse Modeling Framework (EMF) and XML Schema Definition (XSD)
+plugins.
 
 %prep
 %setup -q -n emf-%{version}
-
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
+%patch1 -p0 -b .orig
+#https://bugs.eclipse.org/bugs/show_bug.cgi?id=406981
+#%patch2 -p1 -b .orig
+%patch3 -p1 -b .orig
+%patch4 -p1 -b .orig
+%patch5
 
 rm org.eclipse.emf.doc/tutorials/jet2/jetc-task.jar
 rm org.eclipse.emf.test.core/data/data.jar
@@ -130,7 +136,6 @@ rm org.eclipse.emf.test.core/data/data.jar
 # link to local java api javadocs
 sed -i -e "s|http://java.sun.com/j2se/1.5/docs/api/|%{_javadocdir}/java|" -e "s|\${javaHome}/docs/api/|%{_javadocdir}/java|" \
   org.eclipse.emf.doc/build/javadoc.xml.template \
-  org.eclipse.emf.ecore.sdo.doc/build/javadoc.xml.template \
   org.eclipse.xsd.doc/build/javadoc.xml.template
 
 # make sure upstream hasn't sneaked in any jars we don't know about
@@ -146,161 +151,307 @@ if [ ! -z "$JARS" ]; then
 fi
 
 %build
-# build all features
-# we use forceContextQualifier because the docs plugins use custom build scripts and don't work otherwise
-%{eclipse_base}/buildscripts/pdebuild -f org.eclipse.emf.all \
-  -a "-DjavacTarget=1.5 -DjavacSource=1.5 -DforceContextQualifier=`date +%Y%m%d%H%M`"
+# Note: We use forceContextQualifier because the docs plugins use custom build
+#       scripts and don't work otherwise.
+OPTIONS="-DjavacTarget=1.5 -DjavacSource=1.5 -DforceContextQualifier=%{context_qualifier}"
+
+# Work around pdebuild entering/leaving symlink it is unaware of.
+ln -s %{_builddir}/emf-%{version}/org.eclipse.emf.license-feature %{_builddir}/emf-%{version}/org.eclipse.emf.license
+ln -s %{_builddir}/emf-%{version}/org.eclipse.xsd.license-feature %{_builddir}/emf-%{version}/org.eclipse.xsd.license
+
+# We build the emf, xsd and examples features seperately, rather than just
+# building the "all" feature, because it makes the files section easier to
+# maintain (i.e. we don't have to know when upstream adds a new plugin)
+
+# build core features
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.common -a "$OPTIONS"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore -a "$OPTIONS"
+
+# build emf features - order is important
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.edit -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.common.ui -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.edit.ui -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore.edit -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ecore -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ecore -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ui -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ecore.ui -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ui -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.databinding -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.databinding.edit -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.converter -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.sdk -a "$OPTIONS" -d "eclipse-emf-core"
+
+# build xsd features
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.edit -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.editor -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.mapping -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.mapping.editor -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.ecore.converter -a "$OPTIONS" -d "eclipse-emf-core"
+%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.sdk -a "$OPTIONS" -d "eclipse-emf-core"
+
+# build examples features
+%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.examples -a "$OPTIONS" -d "eclipse-emf-core"
 
 %install
-rm -rf %{buildroot}
 install -d -m 755 %{buildroot}%{eclipse_dropin}
-unzip -q -d %{buildroot}%{eclipse_dropin} build/rpmBuild/org.eclipse.emf.all.zip
+install -d -m 755 %{buildroot}%{_javadir}/emf
 
-%clean
-rm -rf %{buildroot}
+unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.common.zip
+unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.ecore.zip
+unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.edit.zip
 
+
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.common.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.edit.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.ecore.edit.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.ecore.editor.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.codegen.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.codegen.ecore.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.converter.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.codegen.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.codegen.ecore.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.mapping.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.mapping.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.mapping.ecore.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.mapping.ecore.editor.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.databinding.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.databinding.edit.zip
+
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf-sdk      build/rpmBuild/org.eclipse.emf.sdk.zip
+
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.edit.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.editor.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.mapping.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.mapping.editor.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.ecore.converter.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd-sdk      build/rpmBuild/org.eclipse.xsd.sdk.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf-examples build/rpmBuild/org.eclipse.emf.examples.zip
+
+# the non-sdk builds are a subset of the sdk builds, so delete duplicate features & plugins from the sdks
+(cd %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/features && ls %{buildroot}%{eclipse_dropin}/emf/eclipse/features | xargs rm -rf)
+(cd %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins  && ls %{buildroot}%{eclipse_dropin}/emf/eclipse/plugins  | xargs rm -rf)
+(cd %{buildroot}%{eclipse_dropin}/xsd-sdk/eclipse/features && ls %{buildroot}%{eclipse_dropin}/xsd/eclipse/features | xargs rm -rf)
+(cd %{buildroot}%{eclipse_dropin}/xsd-sdk/eclipse/plugins  && ls %{buildroot}%{eclipse_dropin}/xsd/eclipse/plugins  | xargs rm -rf)
+
+# remove duplicated plugins and features
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/features/org.eclipse.emf.common_*
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins/org.eclipse.emf.common_*
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/features/org.eclipse.emf.ecore_*
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins/org.eclipse.emf.ecore_*
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins/org.eclipse.emf.ecore.change_*
+rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins/org.eclipse.emf.ecore.xmi_*
+
+pushd %{buildroot}%{_javadir}/emf/eclipse/plugins/
+for f in org.eclipse.emf.common \
+		org.eclipse.emf.ecore.change \
+		org.eclipse.emf.ecore.xmi \
+		org.eclipse.emf.ecore \
+		org.eclipse.emf.edit ; do
+	mv ${f}_* ${f}.jar
+done
+popd
+pushd %{buildroot}%{eclipse_dropin}/emf/eclipse/plugins
+	ln -s %{_javadir}/emf/eclipse/plugins/org.eclipse.emf.edit.jar
+popd
 %files
-%defattr(-,root,root,-)
-%dir %{eclipse_dropin}
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/content.xml
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.codegen_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.codegen.ui_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.codegen.ecore_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.codegen.ecore.ui_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.common_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.common.ui_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.converter_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.databinding_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.databinding.edit_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.edit_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.editor_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.edit_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.edit.ui_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.mapping_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.mapping.ui_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.mapping.ecore_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.mapping.ecore.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ant_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.codegen_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.codegen.ui_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.codegen.ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.codegen.ecore.ui_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.common_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.common.ui_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.converter_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.databinding_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.databinding.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.change_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.change.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.xmi_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.edit.ui_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.exporter_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.importer_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.importer.ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.importer.java_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.importer.rose_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ui_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore2ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore2ecore.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore2xml_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.ecore2xml.ui_*
+%{eclipse_dropin}/emf
+%doc org.eclipse.emf.license-feature/rootfiles/*
+
+%files core
+%{_javadir}/emf
+%doc org.eclipse.emf.license-feature/rootfiles/*
 
 %files sdk
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.doc_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.sdk_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.cheatsheets_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.doc_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.example.installer_*
-
-%files sdo
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo.edit_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.commonj.sdo_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.sdo_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.sdo.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.sdo.editor_*
-
-%files sdo-sdk
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo.doc_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo.sdk_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.ecore.sdo.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.sdo.doc_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.ecore.sdo.source_*
+%{eclipse_dropin}/emf-sdk
 
 %files xsd
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.ecore.converter_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.edit_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.editor_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.mapping_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.mapping.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.xsd2ecore_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.mapping.xsd2ecore.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.ecore.converter_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.ecore.exporter_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.ecore.importer_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.mapping_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.mapping.editor_*
+%{eclipse_dropin}/xsd
+%doc org.eclipse.xsd.license-feature/rootfiles/*
 
 %files xsd-sdk
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.doc_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.sdk_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.xsd.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.cheatsheets_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.doc_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.example.installer_*
+%{eclipse_dropin}/xsd-sdk
 
 %files examples
-%defattr(-,root,root,-)
-%doc %{eclipse_dropin}/eclipse/epl-v10.html
-%doc %{eclipse_dropin}/eclipse/notice.html
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.all_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.examples_*
-%{eclipse_dropin}/eclipse/features/org.eclipse.emf.examples.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.activities_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples.generator.validator_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples.library_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples.library.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples.library.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.examples.source_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.exporter.html_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.java_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.java.edit_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.emf.java.editor_*
-%{eclipse_dropin}/eclipse/plugins/org.eclipse.xsd.example_*
+%{eclipse_dropin}/emf-examples
 
+%changelog
+* Mon Sep 30 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.9.1-1
+- Update to latest upstream.  
+
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.9.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Fri Jun 21 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.9.0-1
+- Update to Kepler release.
+
+* Fri Jun 21 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.9.0-0.2.git352e28
+- 974108: Remove versions and timestamps from EMF filenames.
+
+* Wed May 1 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.9.0-0.1.git352e28
+- Update to latest upstream.
+
+* Thu Mar 21 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-20
+- Initial SCLization.
+
+* Mon Jan 28 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-7
+- Really fix RHBZ#894154.
+
+* Thu Jan 17 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-6
+- Move emf.edit back to eclipse-emf-core and symlink it.
+
+* Thu Jan 17 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-5
+- Fix for RHBZ#894154
+
+* Mon Dec 17 2012 Alexander Kurtakov <akurtako@redhat.com> 1:2.8.1-4
+- Remove unneeded things.
+
+* Mon Oct 8 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-3
+- Avoid generating automatic OSGi dependencies (yet another attempt).
+
+* Mon Oct 8 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-2
+- Avoid generating automatic OSGi dependencies. (fix)
+
+* Mon Oct 1 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.1-1
+- Update to upstream 2.8.1 release
+
+* Wed Sep 12 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-17
+- Avoid generating automatic OSGi dependencies.
+
+* Tue Aug 15 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-16
+- Removed obsolete.
+
+* Tue Aug 14 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-15
+- Moved Obs emf-core to emf-core package.
+- Removed dropins symlinks.
+
+* Tue Aug 14 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-14
+- Added Epoch to eclipse-emf-core.
+- Updated eclipse-pde dependency version to 4.2.0.
+
+* Mon Aug 13 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-13
+- Move emf.edit to eclipse-emf-core.
+
+* Fri Aug 10 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-12
+- Lower eclipse-platform version requirement (CBI Eclipse is not in yet).
+
+* Fri Aug 10 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-11
+- Get rid off conflicts clause.
+
+* Thu Aug 2 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-10
+- Moving core back to emf package (for CBI build).
+
+* Wed Jul 18 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.8.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Tue Jul 10 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-1
+- Update to upstream Juno.
+
+* Mon May 7 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.7.e674bb28ad412fc9bc786f2f9b3c157eb2cbdae0
+- Update to M7.
+
+* Mon Apr 16 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.6.postM6
+- Bugs 812870, 812872 - fix building index for documentation.
+
+* Tue Apr 10 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.5.postM6
+- Remove %clean section.
+- Remove duplicated plugins.
+
+* Mon Apr 2 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.4.postM6
+- Use %{bindir}/eclipse-pdebuild.
+
+* Thu Mar 29 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.3.postM6
+- Back noarch.
+- Use the eclipse-emf-core from main eclipse-emf.
+
+* Thu Mar 29 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.2.postM6
+- Removed the noarch tag.
+
+* Thu Mar 29 2012 Krzysztof Daniel <kdaniel@redhat.com> 2.8.0-0.1.postM6
+- Update to latest upstream version.
+- Package eclipse-emf-core created for the need of Eclipse 4.2. 
+- Removed usage of Eclipse reconciler script.
+
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.7.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Tue Nov 29 2011 Jeff Johnston <jjohnstn@redhat.com> 2.7.1-1
+- Update to 2.7.1.
+- Add rhel flags.
+
+* Wed Oct 5 2011 Sami Wagiaalla <swagiaal@redhat.com> 2.7.0-2
+- Use the reconciler to install/uninstall plugins during rpm
+  post and postun respectively.
+
+* Thu Sep 15 2011 Roland Grunberg <rgrunber@redhat.com> 2.7.0-1
+- Update to 2.7.0.
+- Re-apply necessary patches, content-handler error fixed upstream.
+- licenses now exist in org.eclipse.{emf,xsd}.license-feature only.
+
+* Wed Sep 14 2011 Roland Grunberg <rgrunber@redhat.com> 2.6.1-2
+- Fix RHBZ #716165 using old patches.
+- Fix ContentHandler casting issue.
+
+* Fri Mar 18 2011 Mat Booth <fedora@matbooth.co.uk> 2.6.1-1
+- Update to 2.6.1.
+
+* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.6.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Mon Jul 19 2010 Charley Wang <chwang@redhat.com> - 2.6.0-1
+- Update to 2.6.0
+
+* Sat Sep 19 2009 Mat Booth <fedora@matbooth.co.uk> - 2.5.0-4
+- Re-enable jar repacking now that RHBZ #461854 has been resolved.
+
+* Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.5.0-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
+* Thu Jul 02 2009 Mat Booth <fedora@matbooth.co.uk> 2.5.0-2
+- SDK requires PDE for example plug-in projects.
+
+* Sun Jun 28 2009 Mat Booth <fedora@matbooth.co.uk> 2.5.0-1
+- Update to 2.5.0 final release (Galileo).
+- Build the features seperately to allow for a saner %%files section.
+
+* Fri May 22 2009 Alexander Kurtakov <akurtako@redhat.com> 2.5.0-0.2.RC1
+- Update to 2.5.0 RC1.
+- Use %%global instead of %%define. 
+
+* Sat Apr 18 2009 Mat Booth <fedora@matbooth.co.uk> 2.5.0-0.1.M6
+- Update to Milestone 6 release of 2.5.0.
+- Require Eclipse 3.5.0.
+
+* Tue Apr 7 2009 Alexander Kurtakov <akurtako@redhat.com> 2.4.2-3
+- Fix directory ownership.
+
+* Mon Mar 23 2009 Alexander Kurtakov <akurtako@redhat.com> 2.4.2-2
+- Rebuild to not ship p2 context.xml.
+- Remove context.xml from %%files section.
+
+* Sat Feb 28 2009 Mat Booth <fedora@matbooth.co.uk> 2.4.2-1
+- Update for Ganymede SR2.
+
+* Tue Feb 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.4.1-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
+* Tue Feb 03 2009 Mat Booth <fedora@matbooth.co.uk> 2.4.1-4
+- Make context qualifier the same as upstream.
+
+* Sat Jan 10 2009 Mat Booth <fedora@matbooth.co.uk> 2.4.1-3
+- Removed AOT bits and change package names to what they used to be.
+- Obsolete standalone package.
+
+* Tue Dec 23 2008 Mat Booth <fedora@matbooth.co.uk> 2.4.1-2
+- Build example installer plugins using the source from the tarball instead of
+  trying to get the examples from source control a second time.
+
+* Fri Dec 12 2008 Mat Booth <fedora@matbooth.co.uk> 2.4.1-1
+- Initial release, based on eclipse-gef spec file, but with disabled AOT
+  compiled bits because of RHBZ #477707.
