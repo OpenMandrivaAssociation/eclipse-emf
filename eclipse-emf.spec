@@ -123,11 +123,11 @@ plugins.
 
 %prep
 %setup -q -n emf-%{version}
-%patch1 -p0 -b .orig
+%patch1 -p0
 #https://bugs.eclipse.org/bugs/show_bug.cgi?id=406981
-#%patch2 -p1 -b .orig
-%patch3 -p1 -b .orig
-%patch4 -p1 -b .orig
+#$patch2 -p1 -b .orig
+%patch3 -p1
+%patch4 -p1
 %patch5
 
 rm org.eclipse.emf.doc/tutorials/jet2/jetc-task.jar
