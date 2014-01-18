@@ -29,6 +29,7 @@ Requires:	eclipse-platform >= 1:4.2.0
 Requires:	java
 Requires:	jpackage-utils
 Requires:	osgi(org.apache.ant)
+%if 0
 Requires:	osgi(org.eclipse.ant.core)
 Requires:	osgi(org.eclipse.core.databinding)
 Requires:	osgi(org.eclipse.core.databinding.property)
@@ -48,6 +49,7 @@ Requires:	osgi(org.eclipse.ui)
 Requires:	osgi(org.eclipse.ui.ide)
 Requires:	osgi(org.eclipse.ui.views)
 Requires:	osgi(org.eclipse.ui.workbench)
+%endif
 Provides:	eclipse-emf = 2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf.ant) = 2.8.0
 Provides:	osgi(org.eclipse.emf.codegen) = 2.9.0
@@ -201,7 +203,9 @@ Release:	1.0
 Summary:	eclipse-emf-core bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	java
+%if 0
 Requires:	osgi(org.eclipse.core.runtime)
+%endif
 Provides:	eclipse-emf-core = 1:2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf.common) = 2.9.1
 Provides:	osgi(org.eclipse.emf.ecore) = 2.9.1
@@ -250,6 +254,7 @@ Summary:	eclipse-emf-examples bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	eclipse-emf = 2.9.1-1.0
 Requires:	eclipse-emf-xsd = 2.9.1-1.0
+%if 0
 Requires:	osgi(org.eclipse.core.databinding)
 Requires:	osgi(org.eclipse.core.databinding.property)
 Requires:	osgi(org.eclipse.core.expressions)
@@ -272,6 +277,7 @@ Requires:	osgi(org.eclipse.jface.databinding)
 Requires:	osgi(org.eclipse.ui)
 Requires:	osgi(org.eclipse.ui.forms)
 Requires:	osgi(org.eclipse.ui.ide)
+%endif
 Provides:	eclipse-emf-examples = 2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf.activities) = 2.6.0
 Provides:	osgi(org.eclipse.emf.examples) = 2.6.0
@@ -374,6 +380,7 @@ Requires:	javapackages-bootstrap
 Requires:	eclipse-emf = 2.9.1-1.0
 Requires:	eclipse-pde >= 1:4.2.0
 Requires:	java-javadoc
+%if 0
 Requires:	osgi(org.eclipse.core.resources)
 Requires:	osgi(org.eclipse.core.runtime)
 Requires:	osgi(org.eclipse.emf.codegen.ecore.ui)
@@ -389,6 +396,7 @@ Requires:	osgi(org.eclipse.jface)
 Requires:	osgi(org.eclipse.ui.cheatsheets)
 Requires:	osgi(org.eclipse.ui.ide)
 Requires:	osgi(org.eclipse.ui.workbench)
+%endif
 Provides:	eclipse-emf-sdk = 2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf) = 2.6.0
 Provides:	osgi(org.eclipse.emf.cheatsheets) = 2.5.0
@@ -461,6 +469,7 @@ Release:	1.0
 Summary:	eclipse-emf-xsd bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	eclipse-emf = 2.9.1-1.0
+%if 0
 Requires:	osgi(org.eclipse.core.resources)
 Requires:	osgi(org.eclipse.core.runtime)
 Requires:	osgi(org.eclipse.emf.ecore)
@@ -476,6 +485,7 @@ Requires:	osgi(org.eclipse.jface.text)
 Requires:	osgi(org.eclipse.ui.editors)
 Requires:	osgi(org.eclipse.ui.ide)
 Requires:	osgi(org.eclipse.ui.workbench.texteditor)
+%endif
 Provides:	eclipse-emf-xsd = 2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf.mapping.xsd2ecore) = 2.5.0
 Provides:	osgi(org.eclipse.emf.mapping.xsd2ecore.editor) = 2.6.0
@@ -550,12 +560,14 @@ Requires:	eclipse-emf-sdk = 2.9.1-1.0
 Requires:	eclipse-emf-xsd = 2.9.1-1.0
 Requires:	eclipse-pde >= 1:4.2.0
 Requires:	java-javadoc
+%if 0
 Requires:	osgi(org.eclipse.emf.cheatsheets)
 Requires:	osgi(org.eclipse.emf.common.ui)
 Requires:	osgi(org.eclipse.help)
 Requires:	osgi(org.eclipse.ui.cheatsheets)
 Requires:	osgi(org.eclipse.xsd)
 Requires:	osgi(org.eclipse.xsd.ecore.importer)
+%endif
 Provides:	eclipse-emf-xsd-sdk = 2.9.1-1.0:2014.0
 Provides:	osgi(org.eclipse.emf.mapping.xsd2ecore.editor.source) = 2.6.0
 Provides:	osgi(org.eclipse.emf.mapping.xsd2ecore.source) = 2.5.0
