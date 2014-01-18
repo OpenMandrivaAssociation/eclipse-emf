@@ -25,11 +25,13 @@ BuildArch:	noarch
 Summary:	eclipse-emf bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	eclipse-emf-core
+%if 0
 Requires:	eclipse-platform >= 1:4.2.0
+%endif
 Requires:	java
 Requires:	jpackage-utils
-Requires:	osgi(org.apache.ant)
 %if 0
+Requires:	osgi(org.apache.ant)
 Requires:	osgi(org.eclipse.ant.core)
 Requires:	osgi(org.eclipse.core.databinding)
 Requires:	osgi(org.eclipse.core.databinding.property)
@@ -378,7 +380,9 @@ Release:	1.0
 Summary:	eclipse-emf-sdk bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	eclipse-emf = 2.9.1-1.0
+%if 0
 Requires:	eclipse-pde >= 1:4.2.0
+%endif
 Requires:	java-javadoc
 %if 0
 Requires:	osgi(org.eclipse.core.resources)
@@ -558,7 +562,9 @@ Summary:	eclipse-emf-xsd-sdk bootstrap version
 Requires:	javapackages-bootstrap
 Requires:	eclipse-emf-sdk = 2.9.1-1.0
 Requires:	eclipse-emf-xsd = 2.9.1-1.0
+%if 0
 Requires:	eclipse-pde >= 1:4.2.0
+%endif
 Requires:	java-javadoc
 %if 0
 Requires:	osgi(org.eclipse.emf.cheatsheets)
