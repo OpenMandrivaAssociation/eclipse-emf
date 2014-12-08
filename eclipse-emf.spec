@@ -2,63 +2,37 @@
 %{?scl:%scl_package eclipse-emf}
 %{!?scl:%global pkg_name %{name}}
 
-
-%if 0%{?rhel} >= 6
-%global debug_package %{nil}
-%endif
 %global eclipse_dropin   %{_datadir}/eclipse/dropins
-
-%global emf_tag R2_9_1
-%global context_qualifier v20130930-0823
+%global git_tag R2_10_1
 
 %define __requires_exclude osgi*
 
 Name:      %{?scl_prefix}eclipse-emf
-Version:   2.9.1
-Release:   1.1%{?dist} 
-Summary:   Eclipse Modeling Framework (EMF) Eclipse plugin
-
+Version:   2.10.1
+Release:   1%{?dist}
+Summary:   Eclipse Modeling Framework (EMF) Eclipse plug-in
 License:   EPL
 URL:       http://www.eclipse.org/modeling/emf/
 
-# source tarball and the script used to generate it from upstream's source control
-# script usage:
-# $ sh get-emf.sh
-Source0:   emf-%{emf_tag}.tar.gz
-Source1:   get-emf.sh
+Source0:   http://git.eclipse.org/c/emf/org.eclipse.emf.git/snapshot/org.eclipse.emf-%{git_tag}.tar.bz2
 
-# don't depend on ANT_HOME and JAVA_HOME environment vars, patch upstream
-#Patch0:    %{name}-make-homeless.patch
 # look inside correct directory for platform docs
-Patch1:    %{pkg_name}-platform-docs-location.patch
+Patch0:    %{pkg_name}-platform-docs-location.patch
 # Build docs correctly
-Patch3:    %{pkg_name}-build-docs.patch
-# Remove xsd2ecore components from SDK, they are not in the main feature
-Patch4:    %{pkg_name}-no-xsd2ecore.patch
-Patch5:    %{pkg_name}-fix-missing-index.patch
+Patch1:    %{pkg_name}-build-docs.patch
+Patch2:    %{pkg_name}-fix-missing-index.patch
 
 BuildArch:        noarch
 
-# we require 1.6.0 because the javadocs fail to build otherwise
-BuildRequires:    java-devel >= 1:1.6.0
-BuildRequires:    java-javadoc
+BuildRequires:    java-devel
 BuildRequires:    jpackage-utils
-BuildRequires:    %{?scl_prefix}eclipse-pde >= 1:4.2.0
+BuildRequires:    %{?scl_prefix}eclipse-pde >= 1:4.3.1
 BuildRequires:    dos2unix
-Requires:         java
 Requires:         jpackage-utils
-Requires:         %{?scl_prefix}eclipse-platform >= 1:4.2.0
+Requires:         %{?scl_prefix}eclipse-platform >= 1:4.3.1
 Requires:         %{name}-core
 
-# the standalone package was deprecated and removed in EMF 2.3 (see eclipse.org bug #191837)
-Obsoletes:        %{name}-standalone < 2.4
-
-# the SDO sub-project was terminated upstream and removed in EMF 2.5 (see eclipse.org bug #251402)
-Obsoletes:        %{name}-sdo < 2.5
-Obsoletes:        %{name}-sdo-sdk < 2.5
-
 #TODO: ODA, GWT and RAP components are not packaged.
-#TODO: Possibly spin XSD off into it's own package, upstream have moved it to it's project
 
 %description
 The Eclipse Modeling Framework (EMF) allows developers to build tools and
@@ -69,134 +43,81 @@ classes that enable viewing and command-based editing of the model, and a
 basic editor.
 
 %package   core
-Epoch:      1
+Epoch:     1
 Summary:   Eclipse EMF Core
-
-Requires:  java
-Obsoletes: eclipse-emf-core < 1:2.8.0-20
+Obsoletes: eclipse-emf-core < 1:2.8.2
 
 %description core
-The core of Eclipse Modeling Framework
- 
+EMF bundles required by eclipse-platform.
+
 %package   sdk
 Summary:   Eclipse EMF SDK
-
-Requires:  java-javadoc
-Requires:  %{?scl_prefix}eclipse-pde >= 1:4.2.0
+Requires:  %{?scl_prefix}eclipse-pde >= 1:4.3.1
 Requires:  %{name} = %{version}-%{release}
 
 %description sdk
-Documentation and source for the Eclipse Modeling Framework (EMF).
-
-%package   xsd
-Summary:   XML Schema Definition (XSD) Eclipse plugin
-
-Requires:  %{name} = %{version}-%{release}
-
-%description xsd
-The XML Schema Definition (XSD) plugin is a library that provides an API for
-manipulating the components of an XML Schema as described by the W3C XML
-Schema specifications, as well as an API for manipulating the DOM-accessible
-representation of XML Schema as a series of XML documents.
-
-%package   xsd-sdk
-Summary:   Eclipse XSD SDK
-
-Requires:  java-javadoc
-Requires:  %{?scl_prefix}eclipse-pde >= 1:4.2.0
-Requires:  %{name}-xsd = %{version}-%{release}
-Requires:  %{name}-sdk = %{version}-%{release}
-
-%description xsd-sdk
-Documentation and source for the Eclipse XML Schema Definition (XSD) plugin.
+Documentation and developer resources for the Eclipse Modeling Framework
+(EMF) plug-in.
 
 %package   examples
-Summary:   Eclipse EMF/XSD examples
-
-Requires:  %{name}         = %{version}-%{release}
-Requires:  %{name}-xsd     = %{version}-%{release}
+Summary:   Eclipse EMF examples
+Requires:  %{name}-sdk = %{version}-%{release}
 
 %description examples
 Installable versions of the example projects from the SDKs that demonstrate how
-to use the Eclipse Modeling Framework (EMF) and XML Schema Definition (XSD)
-plugins.
+to use the Eclipse Modeling Framework (EMF) plug-ins.
 
 %prep
-%setup -q -n emf-%{version}
-%patch1 -p0
-#https://bugs.eclipse.org/bugs/show_bug.cgi?id=406981
-#$patch2 -p1 -b .orig
-%patch3 -p1
-%patch4 -p1
-%patch5
+%setup -q -n org.eclipse.emf-%{git_tag}
 
-rm org.eclipse.emf.doc/tutorials/jet2/jetc-task.jar
-rm org.eclipse.emf.test.core/data/data.jar
+find -name *.jar -exec rm -rf {} \;
+find -name *.class -exec rm -rf {} \;
 
-# link to local java api javadocs
-sed -i -e "s|http://java.sun.com/j2se/1.5/docs/api/|%{_javadocdir}/java|" -e "s|\${javaHome}/docs/api/|%{_javadocdir}/java|" \
-  org.eclipse.emf.doc/build/javadoc.xml.template \
-  org.eclipse.xsd.doc/build/javadoc.xml.template
+%patch0
+%patch1
+%patch2
 
-# make sure upstream hasn't sneaked in any jars we don't know about
-JARS=""
-for j in `find -name "*.jar"`; do
-  if [ ! -L $j ]; then
-    JARS="$JARS $j"
-  fi
-done
-if [ ! -z "$JARS" ]; then
-   echo "These jars should be deleted and symlinked to system jars: $JARS"
-   exit 1
-fi
+mv {features,plugins,doc,examples}/* .
+rm -rf features plugins doc examples
 
 %build
 # Note: We use forceContextQualifier because the docs plugins use custom build
 #       scripts and don't work otherwise.
-OPTIONS="-DjavacTarget=1.5 -DjavacSource=1.5 -DforceContextQualifier=%{context_qualifier}"
+OPTIONS="-DjavacTarget=1.5 -DjavacSource=1.5 -DforceContextQualifier=$(date +v%Y%m%d-%H%M)"
 
 # Work around pdebuild entering/leaving symlink it is unaware of.
-ln -s %{_builddir}/emf-%{version}/org.eclipse.emf.license-feature %{_builddir}/emf-%{version}/org.eclipse.emf.license
-ln -s %{_builddir}/emf-%{version}/org.eclipse.xsd.license-feature %{_builddir}/emf-%{version}/org.eclipse.xsd.license
+ln -s %{_builddir}/org.eclipse.emf-%{git_tag}/org.eclipse.emf.license-feature \
+  %{_builddir}/org.eclipse.emf-%{git_tag}/org.eclipse.emf.license
 
-# We build the emf, xsd and examples features seperately, rather than just
-# building the "all" feature, because it makes the files section easier to
-# maintain (i.e. we don't have to know when upstream adds a new plugin)
+# We build the features seperately, rather than just building the "all"
+# feature, because it makes the files section easier to maintain
+# (i.e. we don't have to know when upstream adds a new plugin)
 
 # build core features
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.common -a "$OPTIONS"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore -a "$OPTIONS"
+eclipse-pdebuild -f org.eclipse.emf.common -a "$OPTIONS"
+eclipse-pdebuild -f org.eclipse.emf.ecore -a "$OPTIONS"
 
 # build emf features - order is important
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.edit -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.common.ui -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.edit.ui -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore.edit -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ecore -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ecore -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ui -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.codegen.ecore.ui -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ui -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.mapping.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.databinding -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.databinding.edit -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.converter -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.sdk -a "$OPTIONS" -d "eclipse-emf-core"
-
-# build xsd features
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.edit -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.editor -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.mapping -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.mapping.editor -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.ecore.converter -a "$OPTIONS" -d "eclipse-emf-core"
-%{_bindir}/eclipse-pdebuild -f org.eclipse.xsd.sdk -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.edit -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.common.ui -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.edit.ui -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.ecore.edit -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.codegen -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.codegen.ecore -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.mapping -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.mapping.ecore -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.codegen.ui -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.codegen.ecore.ui -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.mapping.ui -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.mapping.ecore.editor -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.databinding -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.databinding.edit -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.converter -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.sdk -a "$OPTIONS" -d "eclipse-emf-core"
 
 # build examples features
-%{_bindir}/eclipse-pdebuild -f org.eclipse.emf.examples -a "$OPTIONS" -d "eclipse-emf-core"
+eclipse-pdebuild -f org.eclipse.emf.examples -a "$OPTIONS" -d "eclipse-emf-core"
 
 %install
 install -d -m 755 %{buildroot}%{eclipse_dropin}
@@ -204,10 +125,10 @@ install -d -m 755 %{buildroot}%{_javadir}/emf
 
 unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.common.zip
 unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.ecore.zip
-unzip -q -n -d %{buildroot}%{_javadir}/emf          build/rpmBuild/org.eclipse.emf.edit.zip
 
 
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.common.ui.zip
+unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.edit.zip
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.edit.ui.zip
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.ecore.edit.zip
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.eclipse.emf.ecore.editor.zip
@@ -225,20 +146,11 @@ unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf          build/rpmBuild/org.ecl
 
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf-sdk      build/rpmBuild/org.eclipse.emf.sdk.zip
 
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.edit.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.editor.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.mapping.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.mapping.editor.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd          build/rpmBuild/org.eclipse.xsd.ecore.converter.zip
-unzip -q -n -d %{buildroot}%{eclipse_dropin}/xsd-sdk      build/rpmBuild/org.eclipse.xsd.sdk.zip
 unzip -q -n -d %{buildroot}%{eclipse_dropin}/emf-examples build/rpmBuild/org.eclipse.emf.examples.zip
 
-# the non-sdk builds are a subset of the sdk builds, so delete duplicate features & plugins from the sdks
+# The main features are a subset of the sdk feature, so delete duplicate features & plugins from the sdk
 (cd %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/features && ls %{buildroot}%{eclipse_dropin}/emf/eclipse/features | xargs rm -rf)
 (cd %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/plugins  && ls %{buildroot}%{eclipse_dropin}/emf/eclipse/plugins  | xargs rm -rf)
-(cd %{buildroot}%{eclipse_dropin}/xsd-sdk/eclipse/features && ls %{buildroot}%{eclipse_dropin}/xsd/eclipse/features | xargs rm -rf)
-(cd %{buildroot}%{eclipse_dropin}/xsd-sdk/eclipse/plugins  && ls %{buildroot}%{eclipse_dropin}/xsd/eclipse/plugins  | xargs rm -rf)
 
 # remove duplicated plugins and features
 rm -rf %{buildroot}%{eclipse_dropin}/emf-sdk/eclipse/features/org.eclipse.emf.common_*
@@ -252,14 +164,11 @@ pushd %{buildroot}%{_javadir}/emf/eclipse/plugins/
 for f in org.eclipse.emf.common \
 		org.eclipse.emf.ecore.change \
 		org.eclipse.emf.ecore.xmi \
-		org.eclipse.emf.ecore \
-		org.eclipse.emf.edit ; do
+		org.eclipse.emf.ecore ; do
 	mv ${f}_* ${f}.jar
 done
 popd
-pushd %{buildroot}%{eclipse_dropin}/emf/eclipse/plugins
-	ln -s %{_javadir}/emf/eclipse/plugins/org.eclipse.emf.edit.jar
-popd
+
 %files
 %{eclipse_dropin}/emf
 %doc org.eclipse.emf.license-feature/rootfiles/*
@@ -271,17 +180,32 @@ popd
 %files sdk
 %{eclipse_dropin}/emf-sdk
 
-%files xsd
-%{eclipse_dropin}/xsd
-%doc org.eclipse.xsd.license-feature/rootfiles/*
-
-%files xsd-sdk
-%{eclipse_dropin}/xsd-sdk
-
 %files examples
 %{eclipse_dropin}/emf-examples
 
 %changelog
+* Wed Oct 01 2014 Mat Booth <mat.booth@redhat.com> - 2.10.1-1
+- Update to Luna SR1 release
+- Drop ancient obsoletes on emf-sdo package
+
+* Wed Jun 25 2014 Mat Booth <mat.booth@redhat.com> - 2.10.0-1
+- Update to latest upstream release
+- Fix obsoletes on emf-core package, rhbz #1095431
+- Move edit plugin from core to main package
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.9.2-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Thu Apr 17 2014 Mat Booth <mat.booth@redhat.com> - 2.9.2-2
+- Drop XSD packages, these are now packaged separately
+- Drop ancient obsolete of emf-standalone.
+
+* Wed Mar 12 2014 Mat Booth <fedora@matbooth.co.uk> - 2.9.2-1
+- Update to latest upstream, Kepler SR2
+- Drop requires on java, rhbz #1068039
+- Remove unused patch
+- Update project URL
+
 * Mon Sep 30 2013 Krzysztof Daniel <kdaniel@redhat.com> 1:2.9.1-1
 - Update to latest upstream.  
 
@@ -324,7 +248,7 @@ popd
 * Wed Sep 12 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-17
 - Avoid generating automatic OSGi dependencies.
 
-* Tue Aug 15 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-16
+* Wed Aug 15 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-16
 - Removed obsolete.
 
 * Tue Aug 14 2012 Krzysztof Daniel <kdaniel@redhat.com> 1:2.8.0-15

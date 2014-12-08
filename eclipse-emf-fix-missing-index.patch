@@ -1,5 +1,5 @@
---- org.eclipse.emf.doc/build.properties.bak	2012-03-29 09:25:16.000000000 +0200
-+++ org.eclipse.emf.doc/build.properties	2012-04-16 09:41:01.884130200 +0200
+--- doc/org.eclipse.emf.doc/build.properties.bak	2012-03-29 09:25:16.000000000 +0200
++++ doc/org.eclipse.emf.doc/build.properties	2012-04-16 09:41:01.884130200 +0200
 @@ -25,4 +25,5 @@
                 modeling32.png,\
                 plugin.properties,\
@@ -7,8 +7,8 @@
 -               toc.xml
 +               toc.xml, \
 +               index/
---- org.eclipse.emf.doc/customBuildCallbacks.xml.bak	2012-03-29 09:25:16.000000000 +0200
-+++ org.eclipse.emf.doc/customBuildCallbacks.xml	2012-04-16 14:33:51.571719004 +0200
+--- doc/org.eclipse.emf.doc/customBuildCallbacks.xml.bak	2012-03-29 09:25:16.000000000 +0200
++++ doc/org.eclipse.emf.doc/customBuildCallbacks.xml	2012-04-16 14:33:51.571719004 +0200
 @@ -26,7 +26,7 @@
  	<!-- ===================================================================== -->
  	<target name="post.build.jars">
@@ -18,23 +18,3 @@
  	</target>
  	
  	<!-- ===================================================================== -->
---- org.eclipse.xsd.doc/customBuildCallbacks.xml.bak	2012-03-29 09:25:16.000000000 +0200
-+++ org.eclipse.xsd.doc/customBuildCallbacks.xml	2012-04-16 15:12:43.806003835 +0200
-@@ -26,7 +26,7 @@
- 	<!-- ===================================================================== -->
- 	<target name="post.build.jars">
- 		<!-- TODO: tweak buildDoc.xml as required (copied from ve.doc plugin) -->
--		<!-- <ant antfile="buildDoc.xml" /> -->
-+		<ant antfile="buildDoc.xml" />
- 	</target>
- 	
- 	<!-- ===================================================================== -->
---- org.eclipse.xsd.doc/build.properties.bak	2012-03-29 09:25:24.000000000 +0200
-+++ org.eclipse.xsd.doc/build.properties	2012-04-16 15:12:30.059943214 +0200
-@@ -25,4 +25,5 @@
-                modeling32.png,\
-                plugin.xml,\
-                plugin.properties,\
--               toc.xml
-+               toc.xml,\
-+               index/
