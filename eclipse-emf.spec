@@ -12,7 +12,7 @@ Version:   2.10.1
 Release:   1%{?dist}
 Summary:   Eclipse Modeling Framework (EMF) Eclipse plug-in
 License:   EPL
-URL:       http://www.eclipse.org/modeling/emf/
+URL:       https://www.eclipse.org/modeling/emf/
 
 Source0:   http://git.eclipse.org/c/emf/org.eclipse.emf.git/snapshot/org.eclipse.emf-%{git_tag}.tar.bz2
 
